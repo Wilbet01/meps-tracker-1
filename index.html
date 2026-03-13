@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MEPS">
+<meta name="theme-color" content="#0e0e12">
+<link rel="manifest" href="/manifest.json">
+<title>MEPS Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161c;
+    --surface2: #1e1e28;
+    --border: #2a2a38;
+    --text: #e8e4f0;
+    --muted: #7a7690;
+    --accent: #c084fc;
+    --mental: #60a5fa;
+    --emotional: #f472b6;
+    --physical: #34d399;
+    --spiritual: #fbbf24;
+    --score-glow: rgba(192, 132, 252, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    background-image: radial-gradient(ellipse at 20% 20%, rgba(96,165,250,0.04) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 80%, rgba(192,132,252,0.05) 0%, transparent 50%);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 20px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 52px;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, var(--mental), var(--accent), var(--spiritual));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 32px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .date-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .date-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .score-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .score-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .score-card.mental::before { background: var(--mental); }
+  .score-card.emotional::before { background: var(--emotional); }
+  .score-card.physical::before { background: var(--physical); }
+  .score-card.spiritual::before { background: var(--spiritual); }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .card-label.mental { color: var(--mental); }
+  .card-label.emotional { color: var(--emotional); }
+  .card-label.physical { color: var(--physical); }
+  .card-label.spiritual { color: var(--spiritual); }
+
+  .card-letter {
+    font-family: 'DM Serif Display', serif;
+    font-size: 14px;
+    margin-right: 6px;
+    opacity: 0.5;
+  }
+
+  .dots {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dot:hover { transform: scale(1.1); }
+
+  .dot.active.mental { background: var(--mental); border-color: var(--mental); color: #0e0e12; font-weight: 500; box-shadow: 0 0 16px rgba(96,165,250,0.5); }
+  .dot.active.emotional { background: var(--emotional); border-color: var(--emotional); color: #0e0e12; font-weight: 500; box-shadow: 0 0 16px rgba(244,114,182,0.5); }
+  .dot.active.physical { background: var(--physical); border-color: var(--physical); color: #0e0e12; font-weight: 500; box-shadow: 0 0 16px rgba(52,211,153,0.5); }
+  .dot.active.spiritual { background: var(--spiritual); border-color: var(--spiritual); color: #0e0e12; font-weight: 500; box-shadow: 0 0 16px rgba(251,191,36,0.5); }
+
+  .score-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    line-height: 1;
+  }
+
+  .score-val.mental { color: var(--mental); }
+  .score-val.emotional { color: var(--emotional); }
+  .score-val.physical { color: var(--physical); }
+  .score-val.spiritual { color: var(--spiritual); }
+
+  .total-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .total-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--score-glow);
+    pointer-events: none;
+  }
+
+  .total-score {
+    font-family: 'DM Serif Display', serif;
+    font-size: 72px;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--mental), var(--accent), var(--spiritual));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .total-label { flex: 1; }
+
+  .total-label-main {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .score-breakdown {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    color: var(--text);
+    letter-spacing: 2px;
+  }
+
+  .score-max {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .comment-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .comment-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    resize: none;
+    height: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .save-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #6d28d9, var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .save-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(192,132,252,0.3); }
+  .save-btn:active { transform: translateY(0); opacity: 0.85; }
+
+  .toast {
+    position: fixed;
+    bottom: calc(32px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .trend-section { margin-bottom: 32px; }
+
+  .trend-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .trend-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .week-bar-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 120px;
+    margin-bottom: 8px;
+  }
+
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .bar-stack {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .bar-seg { transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+
+  .bar-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .bar-total {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+
+  .stat-lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .history-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .history-row:hover { border-color: var(--accent); }
+
+  .hist-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    min-width: 80px;
+  }
+
+  .hist-bars {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .hist-pip {
+    height: 6px;
+    border-radius: 3px;
+    flex: 1;
+  }
+
+  .hist-total {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .hist-comment {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Install banner */
+  .install-banner {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    align-items: center;
+    gap: 12px;
+  }
+
+  .install-banner.visible { display: flex; }
+  .install-banner button {
+    margin-left: auto;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #0e0e12;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 8px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 600px) {
+    .score-grid { grid-template-columns: 1fr; }
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+    .total-score { font-size: 52px; }
+    .dots { gap: 6px; }
+    .dot { width: 40px; height: 40px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">MEPS</div>
+    <div class="tagline">Mental · Emotional · Physical · Spiritual</div>
+  </header>
+
+  <div class="install-banner" id="installBanner">
+    📲 Add to your home screen for app-like access
+    <button onclick="installApp()">Install</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('today', event)">Today</button>
+    <button class="tab" onclick="showTab('weekly', event)">Weekly</button>
+    <button class="tab" onclick="showTab('monthly', event)">Monthly</button>
+    <button class="tab" onclick="showTab('history', event)">History</button>
+  </div>
+
+  <!-- TODAY -->
+  <div id="today" class="section active">
+    <div class="date-header" id="todayDate"></div>
+    <div class="score-grid">
+      <div class="score-card mental">
+        <div class="card-label mental"><span class="card-letter">M</span>Mental</div>
+        <div class="dots" id="dots-mental"></div>
+        <div class="score-val mental" id="val-mental">0</div>
+      </div>
+      <div class="score-card emotional">
+        <div class="card-label emotional"><span class="card-letter">E</span>Emotional</div>
+        <div class="dots" id="dots-emotional"></div>
+        <div class="score-val emotional" id="val-emotional">0</div>
+      </div>
+      <div class="score-card physical">
+        <div class="card-label physical"><span class="card-letter">P</span>Physical</div>
+        <div class="dots" id="dots-physical"></div>
+        <div class="score-val physical" id="val-physical">0</div>
+      </div>
+      <div class="score-card spiritual">
+        <div class="card-label spiritual"><span class="card-letter">S</span>Spiritual</div>
+        <div class="dots" id="dots-spiritual"></div>
+        <div class="score-val spiritual" id="val-spiritual">0</div>
+      </div>
+    </div>
+
+    <div class="total-section">
+      <div class="total-score" id="totalScore">0</div>
+      <div class="total-label">
+        <div class="total-label-main">Daily Score</div>
+        <div class="score-breakdown" id="scoreBreakdown">0×0×0×0</div>
+        <div class="score-max">Max: 5×5×5×5 = 625</div>
+      </div>
+    </div>
+
+    <div class="comment-area">
+      <div class="comment-label">Daily Reflection</div>
+      <textarea id="comment" placeholder="How was your day? What drove your scores?"></textarea>
+    </div>
+
+    <button class="save-btn" onclick="saveToday()">Save Today's Entry</button>
+  </div>
+
+  <!-- WEEKLY -->
+  <div id="weekly" class="section">
+    <div class="trend-section">
+      <div class="trend-title">This Week's Trend</div>
+      <div id="weeklyChart"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div id="monthly" class="section">
+    <div class="trend-section">
+      <div class="trend-title">Monthly Overview</div>
+      <div id="monthlyChart"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="history" class="section">
+    <div class="trend-title">All Entries</div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Entry saved ✓</div>
+
+<script>
+  const CATS = ['mental','emotional','physical','spiritual'];
+  const COLORS = { mental: '#60a5fa', emotional: '#f472b6', physical: '#34d399', spiritual: '#fbbf24' };
+  let scores = { mental: 0, emotional: 0, physical: 0, spiritual: 0 };
+  let deferredPrompt = null;
+
+  // PWA install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBanner').classList.add('visible');
+  });
+
+  function installApp() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => {
+        deferredPrompt = null;
+        document.getElementById('installBanner').classList.remove('visible');
+      });
+    }
+  }
+
+  function getKey(date) { return 'meps_' + date.toISOString().split('T')[0]; }
+  function todayKey() { return getKey(new Date()); }
+  function loadData(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
+  function allEntries() {
+    return Object.keys(localStorage)
+      .filter(k => k.startsWith('meps_'))
+      .map(k => ({ date: k.replace('meps_',''), ...JSON.parse(localStorage[k]) }))
+      .sort((a,b) => b.date.localeCompare(a.date));
+  }
+
+  function calcTotal(s) { return s.mental * s.emotional * s.physical * s.spiritual; }
+
+  function buildDots(cat) {
+    const container = document.getElementById('dots-' + cat);
+    container.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot ' + cat + (scores[cat] >= i ? ' active' : '');
+      d.textContent = i;
+      d.onclick = () => setScore(cat, i);
+      container.appendChild(d);
+    }
+  }
+
+  function setScore(cat, val) {
+    scores[cat] = val;
+    buildDots(cat);
+    document.getElementById('val-' + cat).textContent = val;
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const t = calcTotal(scores);
+    document.getElementById('totalScore').textContent = t;
+    document.getElementById('scoreBreakdown').textContent =
+      `${scores.mental}×${scores.emotional}×${scores.physical}×${scores.spiritual}`;
+  }
+
+  function initToday() {
+    document.getElementById('todayDate').textContent =
+      new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    const existing = loadData(todayKey());
+    if (existing) {
+      scores = { mental: existing.mental, emotional: existing.emotional, physical: existing.physical, spiritual: existing.spiritual };
+      document.getElementById('comment').value = existing.comment || '';
+    }
+    CATS.forEach(c => { buildDots(c); document.getElementById('val-' + c).textContent = scores[c]; });
+    updateTotal();
+  }
+
+  function saveToday() {
+    const entry = { ...scores, comment: document.getElementById('comment').value, savedAt: new Date().toISOString() };
+    localStorage.setItem(todayKey(), JSON.stringify(entry));
+    showToast('Entry saved ✓');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function showTab(tab, event) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
+    if (tab === 'weekly') renderWeekly();
+    if (tab === 'monthly') renderMonthly();
+    if (tab === 'history') renderHistory();
+  }
+
+  function renderBars(entries, container) {
+    if (!entries.length) {
+      container.innerHTML = '<div class="no-data">No entries yet · Start tracking today</div>';
+      return;
+    }
+    const maxTotal = 625;
+    let html = '<div class="week-bar-row">';
+    entries.forEach(e => {
+      const total = calcTotal(e);
+      const pct = (total / maxTotal) * 100;
+      const mH = (e.mental / 5) * (pct / 100) * 80;
+      const eH = (e.emotional / 5) * (pct / 100) * 80;
+      const pH = (e.physical / 5) * (pct / 100) * 80;
+      const sH = (e.spiritual / 5) * (pct / 100) * 80;
+      const label = new Date(e.date + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short'}).slice(0,1) +
+                    new Date(e.date + 'T12:00:00').getDate();
+      html += `<div class="bar-col">
+        <div class="bar-total">${total}</div>
+        <div class="bar-stack" style="height:${Math.max(pct * 0.8, 4).toFixed(1)}px;">
+          <div class="bar-seg" style="background:${COLORS.mental};height:${mH.toFixed(1)}px;"></div>
+          <div class="bar-seg" style="background:${COLORS.emotional};height:${eH.toFixed(1)}px;"></div>
+          <div class="bar-seg" style="background:${COLORS.physical};height:${pH.toFixed(1)}px;"></div>
+          <div class="bar-seg" style="background:${COLORS.spiritual};height:${sH.toFixed(1)}px;"></div>
+        </div>
+        <div class="bar-label">${label}</div>
+      </div>`;
+    });
+    html += '</div>';
+    html += '<div class="legend">';
+    CATS.forEach(c => {
+      html += `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[c]}"></div>${c[0].toUpperCase() + c.slice(1)}</div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function renderWeekly() {
+    const today = new Date();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = getKey(d);
+      const data = loadData(key);
+      if (data) days.push({ date: key.replace('meps_',''), ...data });
+    }
+    const container = document.getElementById('weeklyChart');
+    if (days.length) {
+      const avg = (days.reduce((s,e) => s + calcTotal(e), 0) / days.length).toFixed(0);
+      const best = Math.max(...days.map(e => calcTotal(e)));
+      const avgM = (days.reduce((s,e) => s + e.mental, 0) / days.length).toFixed(1);
+      container.innerHTML = `<div class="stat-cards">
+        <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${avg}</div><div class="stat-lbl">Avg Score</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--spiritual)">${best}</div><div class="stat-lbl">Best Day</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--mental)">${days.length}</div><div class="stat-lbl">Days Logged</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--physical)">${avgM}</div><div class="stat-lbl">Avg Mental</div></div>
+      </div>`;
+      const barDiv = document.createElement('div');
+      container.appendChild(barDiv);
+      renderBars(days, barDiv);
+    } else {
+      renderBars([], container);
+    }
+  }
+
+  function renderMonthly() {
+    const now = new Date();
+    const entries = allEntries().filter(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+    const container = document.getElementById('monthlyChart');
+    const monthName = now.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+    let html = `<div class="trend-title" style="margin-top:0">${monthName}</div>`;
+    if (entries.length) {
+      const totals = entries.map(e => calcTotal(e));
+      const avg = (totals.reduce((a,b) => a+b,0) / totals.length).toFixed(0);
+      const best = Math.max(...totals);
+      html += `<div class="stat-cards">
+        <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${avg}</div><div class="stat-lbl">Avg Score</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--spiritual)">${best}</div><div class="stat-lbl">Best Day</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--mental)">${entries.length}</div><div class="stat-lbl">Days Logged</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--emotional)">${(entries.length / now.getDate() * 100).toFixed(0)}%</div><div class="stat-lbl">Consistency</div></div>
+      </div>`;
+      html += '<div class="stat-cards">';
+      CATS.forEach(c => {
+        const avg = (entries.reduce((s,e) => s + e[c], 0) / entries.length).toFixed(1);
+        html += `<div class="stat-card"><div class="stat-num" style="color:${COLORS[c]}">${avg}</div><div class="stat-lbl">${c[0].toUpperCase()+c.slice(1)} Avg</div></div>`;
+      });
+      html += '</div>';
+    }
+    container.innerHTML = html;
+    const barDiv = document.createElement('div');
+    container.appendChild(barDiv);
+    renderBars([...entries].reverse(), barDiv);
+  }
+
+  function renderHistory() {
+    const entries = allEntries();
+    const container = document.getElementById('historyList');
+    if (!entries.length) {
+      container.innerHTML = '<div class="no-data">No entries yet · Start tracking today</div>';
+      return;
+    }
+    let html = '<div class="history-list">';
+    entries.forEach(e => {
+      const total = calcTotal(e);
+      const d = new Date(e.date + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' });
+      const color = total > 400 ? 'var(--physical)' : total > 200 ? 'var(--spiritual)' : total > 80 ? 'var(--accent)' : 'var(--muted)';
+      html += `<div class="history-row">
+        <div>
+          <div class="hist-date">${dateStr}</div>
+          ${e.comment ? `<div class="hist-comment">${e.comment.substring(0,40)}${e.comment.length > 40 ? '…':''}</div>` : ''}
+        </div>
+        <div class="hist-bars">
+          ${CATS.map(c => `<div class="hist-pip" style="background:${COLORS[c]};opacity:${0.2 + (e[c]/5)*0.8}"></div>`).join('')}
+        </div>
+        <div class="hist-total" style="color:${color}">${total}</div>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // Register service worker for PWA offline support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
+  initToday();
+</script>
+</body>
+</html>
